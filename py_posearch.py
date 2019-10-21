@@ -35,10 +35,11 @@ def get_port_information(port):
         nothing
     """
     try:
-        single_port=ports.find("td", text=port).find_next_siblings("td")
-        my_print(port, single_port[2].get_text(), single_port[3].get_text())
+        my_port=ports.find("td", text=port).find_next_siblings("td")
+        my_print(port, my_port[2].get_text(), my_port[3].get_text())
     except AttributeError:
         my_print(port, "N/A", "N/A")
+
 
 if __name__ == "__main__":
     # define argument parser
@@ -52,8 +53,9 @@ if __name__ == "__main__":
     # make request to url & start scrapping
     response = requests.get(URL)
     soup = BeautifulSoup(response.content, 'html.parser')
-    tables=soup.find_all(class_="wikitable")
-    ports=tables[2]
+    table = soup.find_all("tbody")
+    ports = table[5]
+    ports.extend(table[6])
     print(SYM.ljust(110, SYM))
 
     for port in port_numbers:
