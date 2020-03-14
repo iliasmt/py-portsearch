@@ -1,63 +1,61 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#port parser from wikipedia
-#https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
-
+# port parser from wikipedia
+# https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
 
 import argparse
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup as BS
 
-
-SYM = "#"
 URL = "https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers"
 
 
-def my_print(*args):
-    """
-    This function is a custom print implementation,
-    Args:
-        args :port number (int), description (string), if is official or not (string)
-    Returns:
-        nothing
-    """
-    line="{}: {} : {} ".format(args[0], args[1], args[2].strip("\n"))
-    print(line.ljust(110, SYM))
-
-
-def get_port_information(port):
-    """
-    This function takes a port number and searches for information
-    Args:
-        port (int) : port number
-    Returns:
-        nothing
-    """
-    try:
-        my_port=ports.find("td", text=port).find_next_siblings("td")
-        my_print(port, my_port[2].get_text(), my_port[3].get_text())
-    except AttributeError:
-        my_print(port, "N/A", "N/A")
-
-
-if __name__ == "__main__":
-    # define argument parser
-    parser = argparse.ArgumentParser(description="""Search Wikipedia for a port and it's description
-    Example Usage: python py_posearch.py 3389 3306""")
-    parser.add_argument('port', metavar='p', type=int, nargs='+',
-                        help='port number as integer')
-    args = parser.parse_args()
-    port_numbers=args.port
-
-    # make request to url & start scrapping
-    response = requests.get(URL)
-    soup = BeautifulSoup(response.content, 'html.parser')
+def parser(soup):
+    info_tr = []
     table = soup.find_all("tbody")
-    ports = table[5]
-    ports.extend(table[6])
-    print(SYM.ljust(110, SYM))
+    tr = table[5]
+    tr.extend(table[6])
+    info = tr.find_all("tr")
 
-    for port in port_numbers:
-        get_port_information(port)
-    print(SYM.ljust(110, SYM))
+    for i in info:
+        info_tr.append(i.get_text().lstrip().replace("\n", " "))
+    return info_tr
+
+
+def find_data(html, ports, url):
+    soup = BS(html, "html.parser")
+    info = parser(soup)
+
+    for port in ports:
+        for item in info:
+            if str(port) in item:
+                print(item)
+
+
+def fetch_url(session, ports, url):
+    header = {"User-Agent": "Mozilla/5.0"}
+    with session.get(url, headers=header) as response:
+        resp = response.text
+    if response.status_code != 200:
+        print("FAILURE to get {} error code {}".format(url, response.status_code))
+    find_data(resp, ports, url)
+    return resp
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="""Search Wikipedia for a port and it's description
+    Example Usage: python aspy_posearch.py 3389 3306"""
+    )
+    parser.add_argument(
+        "port", metavar="p", type=int, nargs="+", help="port number as integer"
+    )
+    args = parser.parse_args()
+    ports = args.port
+
+    with requests.Session() as session:
+        fetch_url(session, ports, URL)
+
+
+main()
