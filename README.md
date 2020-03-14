@@ -15,3 +15,4 @@ Instructions for the software:
 
 Example usage:
 * python py_posearch.py 3389
+* python py_posearch.py 3389 5000 3306
